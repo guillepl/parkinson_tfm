@@ -57,13 +57,6 @@ deg_location$chr <- paste0('chr',deg_location$chr)
 
 deg_value <- counts_sig
 
-# Writting DMP and DEG data to TXT files
-write.table(dmp_location, file='integration_data/dmp_location.txt', sep='\t')
-write.table(dmp_value, file='integration_data/dmp_value.txt', sep='\t')
-write.table(deg_location, file='integration_data/deg_location.txt', sep='\t')
-write.table(deg_value, file='integration_data/deg_value.txt', sep='\t')
-write.table(covariates, file='integration_data/covariates.txt', sep='\t')
-
 ##### Using matrixEQTL ####
 base.dir = find.package('MatrixEQTL')
 
@@ -139,9 +132,6 @@ dmp_trans_sig <- dmp_trans[dmp_trans$FDR <= 0.05,]
 
 dmp_trans_sig_gene <- table(dmp_trans_sig$gene)[order(table(dmp_trans_sig$gene), decreasing=TRUE)]
 
-write.table(dmp_cis_sig, 'Graficos/integracion/dmp_cis_sig.txt')
-write.table(dmp_trans_sig, 'Graficos/integracion/dmp_trans_sig.txt')
-
 #### Finding DEGs with DMPs #### 
 length(deg_sig$gene[deg_sig$gene %in% gene_general$genes]) # 369
 length(deg_sig_up$gene[deg_sig_up$gene %in% gene_hyper$genes])
@@ -150,19 +140,6 @@ length(deg_sig_up$gene[deg_sig_up$gene %in% gene_hypo$genes]) # 1
 length(deg_sig_down$gene[deg_sig_down$gene %in% gene_hypo$genes])
 
 genes_enrichment <- deg_sig$gene[deg_sig$gene %in% gene_general$genes]
-
-# Saving gene names files
-write.table(genes_enrichment, 
-            file='integration_data/genes_enrichment_rnameth.txt',
-            row.names=FALSE,
-            col.names=FALSE,
-            quote=FALSE)
-
-write.table(deg_sig$gene, 
-            file='integration_data/genes_enrichment_rna.txt',
-            row.names=FALSE,
-            col.names=FALSE,
-            quote=FALSE)
 
 #### Integration using multiblock sPLS (DIABLO) ####
 # Creating data
@@ -209,20 +186,22 @@ blockpls_result <- block.splsda(omics_list,
                                 keepX = list.keepX,
                                 design = design)
 
-# Plotting correlation and components
+#### Plotting and saving componentes and variables' correlation ####
 col_duo <- c('royalblue','indianred')
 names(col_duo) <- c('PD','Control')
 colheatmap <- colheatmap <- colorRampPalette(c("royalblue", "white", "indianred"))(200)
 
-
+# First component correlation
 png("Graficos/integracion/diablo_cor_comp1.png", width = 150, height = 100, units='mm', res = 300)
 plotDiablo(blockpls_result, ncomp = 1, col.per.group = col_duo)
 dev.off()
 
+# Second component correlation
 png("Graficos/integracion/diablo_cor_comp2.png", width = 150, height = 100, units='mm', res = 300)
 plotDiablo(blockpls_result, ncomp = 2, col.per.group = col_duo)
 dev.off()
 
+# Components and variables' correlation
 png("Graficos/integracion/diablo_var_circ.png", width = 150, height = 150, units='mm', res = 300)
 plotVar(blockpls_result, var.names = FALSE, 
         style = 'graphics', legend = TRUE, 
@@ -230,6 +209,17 @@ plotVar(blockpls_result, var.names = FALSE,
         col = col_duo)
 dev.off()
 
+# Loadings of top contributive variables ***
+png("Graficos/integracion/var_contrib.png", width = 200, height = 100, units='mm', res = 300)
+plotLoadings(blockpls_result, 
+             comp = 1, 
+             ndisplay = 20,
+             contrib = 'max', 
+             method = 'median',
+             legend.color = col_duo)
+dev.off()
+
+# Heatmap - Clustered Image Map (CIM)
 png("Graficos/integracion/diablo_hm_cluster.png", width = 400, height = 150, units='mm', res = 300)
 cimDiablo(blockpls_result, 
           color = colheatmap,
